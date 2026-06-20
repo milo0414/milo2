@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "宫保鸡丁",
+    "price": 28,
+    "category": "热菜",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=delicious%20kung%20pao%20chicken%20in%20a%20white%20plate&image_size=square",
+    "description": "经典川菜，麻辣鲜香"
+  },
+  {
+    "id": 2,
+    "name": "红烧肉",
+    "price": 38,
+    "category": "热菜",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=braised%20pork%20belly%20in%20brown%20sauce%20on%20a%20plate&image_size=square",
+    "description": "肥而不腻，入口即化"
+  },
+  {
+    "id": 3,
+    "name": "麻婆豆腐",
+    "price": 18,
+    "category": "热菜",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=mapo%20tofu%20spicy%20sichuan%20dish&image_size=square",
+    "description": "麻辣鲜香，嫩滑可口"
+  },
+  {
+    "id": 4,
+    "name": "酸辣土豆丝",
+    "price": 15,
+    "category": "热菜",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=spicy%20and%20sour%20shredded%20potatoes&image_size=square",
+    "description": "爽脆可口，开胃下饭"
+  },
+  {
+    "id": 5,
+    "name": "鱼香肉丝",
+    "price": 25,
+    "category": "热菜",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=yuxiang%20shredded%20pork%20chinese%20dish&image_size=square",
+    "description": "酸甜咸香，口感丰富"
+  },
+  {
+    "id": 6,
+    "name": "清炒时蔬",
+    "price": 16,
+    "category": "素菜",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=stir%20fried%20green%20vegetables&image_size=square",
+    "description": "新鲜健康，清淡美味"
+  },
+  {
+    "id": 7,
+    "name": "蛋炒饭",
+    "price": 12,
+    "category": "主食",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=fried%20rice%20with%20egg%20and%20vegetables&image_size=square",
+    "description": "粒粒分明，香气四溢"
+  },
+  {
+    "id": 8,
+    "name": "番茄蛋汤",
+    "price": 10,
+    "category": "汤类",
+    "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=tomato%20egg%20soup%20in%20a%20bowl&image_size=square",
+    "description": "酸甜开胃，营养丰富"
+  }
+]
