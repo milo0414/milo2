@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AIRecommend from './AIRecommend';
 
 function Menu({ addToCart }) {
   const [menu, setMenu] = useState([]);
@@ -70,6 +71,8 @@ function Menu({ addToCart }) {
           </article>
         ))}
       </div>
+
+      <AIRecommend menu={filteredMenu} addToCart={addToCart} />
     </div>
   );
 }

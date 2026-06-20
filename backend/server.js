@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+require('dotenv').config();
 
 const app = express();
 const PORT = 3001;
@@ -174,6 +175,96 @@ app.put('/api/orders/:id/status', requireRole('staff'), (req, res) => {
   orders[index].status = req.body.status;
   writeData(ORDERS_FILE, orders);
   res.json(orders[index]);
+});
+
+// AI 智能推荐接口
+app.post('/api/ai/recommend', requireRole('customer'), async (req, res) => {
+  const { messages, menu } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: '无效的对话历史' });
+  }
+
+  try {
+    const menuContext = menu && menu.length > 0
+      ? `\n以下是本店菜单供你推荐参考：\n${menu.map(item => `- ${item.name}（${item.category}，¥${item.price}）：${item.description}`).join('\n')}`
+      : '';
+
+    const systemPrompt = {
+      role: 'system',
+      content: `你是餐厅的智能点餐顾问，专门根据顾客的用餐喜好、口味偏好和忌口来推荐菜品。
+
+你的职责：
+1. 询问顾客的用餐场景（如：约会、家庭聚餐、朋友聚会、一人食等）
+2. 了解顾客的口味偏好（如：清淡、重口、麻辣、酸甜等）
+3. 了解顾客的忌口或饮食限制（如：不吃辣、海鲜过敏、素食等）
+4. 根据顾客的回答，从菜单中推荐合适的菜品并说明理由
+5. 推荐时可以包含1-3道菜，并给出搭配建议
+
+注意：
+- 只推荐菜单中有的菜品
+- 推荐时要结合顾客的偏好和场景
+- 保持对话友好、热情，像一位专业的服务员
+- 如果顾客有忌口，必须避开相关菜品
+- 推荐完成后询问顾客是否需要添加到购物车` + menuContext
+    };
+
+    const response = await fetch(process.env.AI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.AI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: process.env.AI_MODEL,
+        messages: [systemPrompt, ...messages],
+        stream: false,
+        temperature: 0.8
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI API Error:', response.status, errorText);
+      return res.status(502).json({ error: 'AI 服务调用失败' });
+    }
+
+    const data = await response.json();
+    res.json({ reply: data.choices?.[0]?.message?.content || '抱歉，AI 暂时无法回复' });
+  } catch (error) {
+    console.error('AI Service Error:', error);
+    res.status(500).json({ error: 'AI 服务连接失败' });
+  }
+});
+
+// 验证 AI 连接
+app.get('/api/ai/verify', async (req, res) => {
+  try {
+    const response = await fetch(process.env.AI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.AI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: process.env.AI_MODEL,
+        messages: [{ role: 'user', content: '你好，请回复"连接成功"' }],
+        stream: false,
+        max_tokens: 50
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.json({ success: false, error: `API 返回错误: ${response.status}`, details: errorText });
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || '';
+    res.json({ success: true, reply });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
 });
 
 app.listen(PORT, () => {
