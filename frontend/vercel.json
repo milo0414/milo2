@@ -2,5 +2,8 @@
   "framework": null,
   "buildCommand": "npm ci && npm run build",
   "outputDirectory": "build",
-  "installCommand": "npm install --unsafe-perm"
+  "installCommand": "npm install --unsafe-perm",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
