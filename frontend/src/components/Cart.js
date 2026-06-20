@@ -5,25 +5,32 @@ function Cart({ cart, updateQuantity, total }) {
   const navigate = useNavigate();
 
   return (
-    <div className="cart">
-      <h3>🛒 购物车</h3>
-      {cart.map(item => (
+    <aside className="cart">
+      <div className="cart-header">
+        <span className="section-label">Order</span>
+        <h3>您的点单</h3>
+      </div>
+      {cart.map((item) => (
         <div key={item.id} className="cart-item">
-          <div>
-            <div style={{ fontWeight: 'bold' }}>{item.name}</div>
-            <div style={{ color: '#e74c3c' }}>¥{item.price}</div>
+          <div className="cart-item-info">
+            <div className="cart-item-name">{item.name}</div>
+            <div className="cart-item-price">¥{item.price}</div>
           </div>
           <div className="cart-controls">
             <button
+              type="button"
               className="qty-btn"
               onClick={() => updateQuantity(item.id, item.quantity - 1)}
+              aria-label="减少"
             >
-              -
+              −
             </button>
-            <span style={{ width: '30px', textAlign: 'center' }}>{item.quantity}</span>
+            <span className="qty-value">{item.quantity}</span>
             <button
+              type="button"
               className="qty-btn"
               onClick={() => updateQuantity(item.id, item.quantity + 1)}
+              aria-label="增加"
             >
               +
             </button>
@@ -31,16 +38,17 @@ function Cart({ cart, updateQuantity, total }) {
         </div>
       ))}
       <div className="cart-total">
-        总计: ¥{total}
+        <span>合计</span>
+        <span>¥{total}</span>
       </div>
       <button
-        className="btn btn-primary"
-        style={{ marginTop: '15px' }}
-        onClick={() => navigate('/checkout')}
+        type="button"
+        className="btn btn-gold"
+        onClick={() => navigate('/customer/checkout')}
       >
-        去结算
+        确认结算
       </button>
-    </div>
+    </aside>
   );
 }
 

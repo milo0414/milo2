@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 
 function Admin() {
   const [menu, setMenu] = useState([]);
@@ -11,10 +12,6 @@ function Admin() {
     image: ''
   });
 
-  useEffect(() => {
-    fetchMenu();
-  }, []);
-
   const fetchMenu = async () => {
     try {
       const res = await fetch('/api/menu');
@@ -25,19 +22,21 @@ function Admin() {
     }
   };
 
+  useEffect(() => {
+    fetchMenu();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingItem) {
-        await fetch(`/api/menu/${editingItem.id}`, {
+        await apiFetch(`/api/menu/${editingItem.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...form, price: Number(form.price) })
         });
       } else {
-        await fetch('/api/menu', {
+        await apiFetch('/api/menu', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...form, price: Number(form.price) })
         });
       }
@@ -45,48 +44,52 @@ function Admin() {
       fetchMenu();
     } catch (error) {
       console.error('保存失败:', error);
+      alert(error.message || '保存失败');
     }
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
-    setForm(item);
+    setForm({
+      name: item.name,
+      price: String(item.price),
+      category: item.category,
+      description: item.description || '',
+      image: item.image || ''
+    });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('确定要删除这个菜品吗？')) {
-      try {
-        await fetch(`/api/menu/${id}`, { method: 'DELETE' });
-        fetchMenu();
-      } catch (error) {
-        console.error('删除失败:', error);
-      }
+    if (!window.confirm('确定要删除这道菜品吗？')) return;
+    try {
+      await apiFetch(`/api/menu/${id}`, { method: 'DELETE' });
+      fetchMenu();
+    } catch (error) {
+      console.error('删除失败:', error);
+      alert(error.message || '删除失败');
     }
   };
 
   const resetForm = () => {
     setEditingItem(null);
-    setForm({
-      name: '',
-      price: '',
-      category: '',
-      description: '',
-      image: ''
-    });
+    setForm({ name: '', price: '', category: '', description: '', image: '' });
   };
 
   return (
-    <div>
-      <h2 style={{ marginBottom: '20px' }}>⚙️ 后台管理</h2>
+    <div className="page-section">
+      <div className="section-header">
+        <span className="section-label">Menu Management</span>
+        <h2 className="section-title">菜单管理</h2>
+      </div>
+
       <div className="admin-grid">
-        <div style={{ background: 'white', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ marginBottom: '15px' }}>
-            {editingItem ? '编辑菜品' : '添加菜品'}
-          </h3>
+        <div className="panel">
+          <h3 className="panel-title">{editingItem ? '编辑菜品' : '新增菜品'}</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>菜品名称</label>
+              <label htmlFor="name">菜品名称</label>
               <input
+                id="name"
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -94,47 +97,53 @@ function Admin() {
               />
             </div>
             <div className="form-group">
-              <label>价格</label>
+              <label htmlFor="price">价格</label>
               <input
+                id="price"
                 type="number"
+                min="0"
+                step="0.01"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label>分类</label>
+              <label htmlFor="category">分类</label>
               <input
+                id="category"
                 type="text"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                placeholder="如：热菜、素菜、汤类、主食"
+                placeholder="热菜、素菜、汤类、主食"
                 required
               />
             </div>
             <div className="form-group">
-              <label>描述</label>
+              <label htmlFor="description">描述</label>
               <textarea
+                id="description"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows="3"
               />
             </div>
             <div className="form-group">
-              <label>图片URL</label>
+              <label htmlFor="image">图片 URL</label>
               <input
+                id="image"
                 type="text"
                 value={form.image}
                 onChange={(e) => setForm({ ...form, image: e.target.value })}
                 placeholder="可选"
               />
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+            <div className="form-actions">
+              <button type="submit" className="btn btn-gold">
                 {editingItem ? '更新' : '添加'}
               </button>
               {editingItem && (
-                <button type="button" className="btn" style={{ flex: 1, background: '#ddd' }} onClick={resetForm}>
+                <button type="button" className="btn btn-outline" onClick={resetForm}>
                   取消
                 </button>
               )}
@@ -142,27 +151,19 @@ function Admin() {
           </form>
         </div>
 
-        <div style={{ background: 'white', borderRadius: '12px', padding: '20px', maxHeight: '600px', overflowY: 'auto' }}>
-          <h3 style={{ marginBottom: '15px' }}>菜品列表</h3>
-          {menu.map(item => (
-            <div key={item.id} style={{ padding: '12px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="panel admin-list">
+          <h3 className="panel-title">菜品列表</h3>
+          {menu.map((item) => (
+            <div key={item.id} className="admin-list-item">
               <div>
-                <div style={{ fontWeight: 'bold' }}>{item.name}</div>
-                <div style={{ color: '#666', fontSize: '0.9rem' }}>¥{item.price} - {item.category}</div>
+                <div className="admin-item-name">{item.name}</div>
+                <div className="admin-item-meta">¥{item.price} · {item.category}</div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  className="btn"
-                  style={{ fontSize: '0.85rem', padding: '5px 10px', background: '#3498db', color: 'white' }}
-                  onClick={() => handleEdit(item)}
-                >
+              <div className="admin-item-actions">
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => handleEdit(item)}>
                   编辑
                 </button>
-                <button
-                  className="btn btn-danger"
-                  style={{ fontSize: '0.85rem', padding: '5px 10px' }}
-                  onClick={() => handleDelete(item.id)}
-                >
+                <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDelete(item.id)}>
                   删除
                 </button>
               </div>

@@ -3,6 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = 3001;
@@ -13,6 +14,13 @@ app.use(bodyParser.json());
 const DATA_DIR = path.join(__dirname, 'data');
 const MENU_FILE = path.join(DATA_DIR, 'menu.json');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+
+const ROLES = {
+  customer: { username: 'guest', role: 'customer', displayName: '贵宾' },
+  staff: { username: 'staff', role: 'staff', displayName: '侍者' }
+};
+
+const sessions = new Map();
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR);
@@ -43,7 +51,7 @@ initData();
 const readData = (filePath) => {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (e) {
+  } catch {
     return [];
   }
 };
@@ -52,47 +60,94 @@ const writeData = (filePath, data) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
-app.get('/api/menu', (req, res) => {
-  const menu = readData(MENU_FILE);
-  res.json(menu);
+const getSession = (req) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return null;
+  return sessions.get(auth.slice(7)) || null;
+};
+
+const requireRole = (...roles) => (req, res, next) => {
+  const session = getSession(req);
+  if (!session) {
+    return res.status(401).json({ error: '请先选择身份进入' });
+  }
+  if (!roles.includes(session.role)) {
+    return res.status(403).json({ error: '无权访问' });
+  }
+  req.user = session;
+  next();
+};
+
+app.post('/api/auth/login', (req, res) => {
+  const { role } = req.body;
+  const account = ROLES[role];
+
+  if (!account) {
+    return res.status(400).json({ error: '无效的身份' });
+  }
+
+  const token = crypto.randomBytes(24).toString('hex');
+  const user = { ...account };
+  sessions.set(token, user);
+  res.json({ token, user });
 });
 
-app.post('/api/menu', (req, res) => {
+app.post('/api/auth/logout', (req, res) => {
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith('Bearer ')) {
+    sessions.delete(auth.slice(7));
+  }
+  res.json({ message: '已退出' });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  const session = getSession(req);
+  if (!session) {
+    return res.status(401).json({ error: '未登录' });
+  }
+  res.json({ user: session });
+});
+
+app.get('/api/menu', (req, res) => {
+  res.json(readData(MENU_FILE));
+});
+
+app.post('/api/menu', requireRole('staff'), (req, res) => {
   const menu = readData(MENU_FILE);
-  const newItem = {
-    id: Date.now(),
-    ...req.body
-  };
+  const newItem = { id: Date.now(), ...req.body };
   menu.push(newItem);
   writeData(MENU_FILE, menu);
   res.json(newItem);
 });
 
-app.put('/api/menu/:id', (req, res) => {
+app.put('/api/menu/:id', requireRole('staff'), (req, res) => {
   const menu = readData(MENU_FILE);
-  const index = menu.findIndex(item => item.id === parseInt(req.params.id));
-  if (index !== -1) {
-    menu[index] = { ...menu[index], ...req.body };
-    writeData(MENU_FILE, menu);
-    res.json(menu[index]);
-  } else {
-    res.status(404).json({ error: 'Item not found' });
+  const index = menu.findIndex((item) => item.id === parseInt(req.params.id, 10));
+  if (index === -1) {
+    return res.status(404).json({ error: '菜品不存在' });
   }
-});
-
-app.delete('/api/menu/:id', (req, res) => {
-  let menu = readData(MENU_FILE);
-  menu = menu.filter(item => item.id !== parseInt(req.params.id));
+  menu[index] = { ...menu[index], ...req.body };
   writeData(MENU_FILE, menu);
-  res.json({ message: 'Item deleted' });
+  res.json(menu[index]);
 });
 
-app.get('/api/orders', (req, res) => {
+app.delete('/api/menu/:id', requireRole('staff'), (req, res) => {
+  let menu = readData(MENU_FILE);
+  menu = menu.filter((item) => item.id !== parseInt(req.params.id, 10));
+  writeData(MENU_FILE, menu);
+  res.json({ message: '已删除' });
+});
+
+app.get('/api/orders', requireRole('staff'), (req, res) => {
+  res.json(readData(ORDERS_FILE));
+});
+
+app.get('/api/orders/my', requireRole('customer'), (req, res) => {
   const orders = readData(ORDERS_FILE);
-  res.json(orders);
+  res.json(orders.filter((order) => order.customerUsername === req.user.username));
 });
 
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', requireRole('customer'), (req, res) => {
   const orders = readData(ORDERS_FILE);
   const newOrder = {
     id: Date.now(),
@@ -101,6 +156,7 @@ app.post('/api/orders', (req, res) => {
     total: req.body.total,
     customer: req.body.customer || '',
     tableNumber: req.body.tableNumber || '',
+    customerUsername: req.user.username,
     status: 'pending',
     createdAt: new Date().toISOString()
   };
@@ -109,16 +165,15 @@ app.post('/api/orders', (req, res) => {
   res.json(newOrder);
 });
 
-app.put('/api/orders/:id/status', (req, res) => {
+app.put('/api/orders/:id/status', requireRole('staff'), (req, res) => {
   const orders = readData(ORDERS_FILE);
-  const index = orders.findIndex(order => order.id === parseInt(req.params.id));
-  if (index !== -1) {
-    orders[index].status = req.body.status;
-    writeData(ORDERS_FILE, orders);
-    res.json(orders[index]);
-  } else {
-    res.status(404).json({ error: 'Order not found' });
+  const index = orders.findIndex((order) => order.id === parseInt(req.params.id, 10));
+  if (index === -1) {
+    return res.status(404).json({ error: '订单不存在' });
   }
+  orders[index].status = req.body.status;
+  writeData(ORDERS_FILE, orders);
+  res.json(orders[index]);
 });
 
 app.listen(PORT, () => {

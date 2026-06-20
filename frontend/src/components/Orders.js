@@ -1,27 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 
 function Orders() {
   const [orders, setOrders] = useState([]);
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('/api/orders');
-      const data = await res.json();
+      const data = await apiFetch('/api/orders');
       setOrders(data.reverse());
     } catch (error) {
       console.error('获取订单失败:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchOrders();
+    const timer = setInterval(fetchOrders, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   const updateStatus = async (id, status) => {
     try {
-      await fetch(`/api/orders/${id}/status`, {
+      await apiFetch(`/api/orders/${id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
       fetchOrders();
@@ -34,29 +38,35 @@ function Orders() {
     const map = {
       pending: '待处理',
       preparing: '制作中',
-      ready: '已完成',
-      completed: '已取餐'
+      ready: '已出餐',
+      completed: '已送达'
     };
     return map[status] || status;
   };
 
+  if (loading) {
+    return <div className="empty-state">正在加载订单...</div>;
+  }
+
   return (
-    <div>
-      <h2 style={{ marginBottom: '20px' }}>📋 订单列表</h2>
+    <div className="page-section">
+      <div className="section-header">
+        <span className="section-label">Orders</span>
+        <h2 className="section-title">订单管理</h2>
+      </div>
+
       {orders.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>
-          暂无订单
-        </div>
+        <div className="empty-state">暂无待处理订单</div>
       ) : (
-        orders.map(order => (
+        orders.map((order) => (
           <div key={order.id} className="order-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+            <div className="order-card-header">
               <div>
-                <div className="order-number">订单 # {order.orderNumber}</div>
-                <div style={{ color: '#666', fontSize: '0.9rem' }}>
-                  {order.customer} - {order.tableNumber}号桌
+                <div className="order-number">No. {order.orderNumber}</div>
+                <div className="order-meta">
+                  {order.customer} · 桌号 {order.tableNumber}
                 </div>
-                <div style={{ color: '#999', fontSize: '0.85rem', marginTop: '5px' }}>
+                <div className="order-time">
                   {new Date(order.createdAt).toLocaleString('zh-CN')}
                 </div>
               </div>
@@ -64,21 +74,21 @@ function Orders() {
                 {getStatusText(order.status)}
               </span>
             </div>
-            <div style={{ marginBottom: '15px' }}>
-              {order.items.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-                  <span>{item.name} x {item.quantity}</span>
+            <div className="order-items">
+              {order.items.map((item, idx) => (
+                <div key={`${item.id}-${idx}`} className="order-item-row">
+                  <span>{item.name} × {item.quantity}</span>
                   <span>¥{item.price * item.quantity}</span>
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>合计: ¥{order.total}</div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="order-card-footer">
+              <div className="order-total">合计 ¥{order.total}</div>
+              <div className="order-actions">
                 {order.status === 'pending' && (
                   <button
-                    className="btn btn-primary"
-                    style={{ fontSize: '0.9rem', padding: '6px 12px' }}
+                    type="button"
+                    className="btn btn-gold btn-sm"
                     onClick={() => updateStatus(order.id, 'preparing')}
                   >
                     开始制作
@@ -86,20 +96,20 @@ function Orders() {
                 )}
                 {order.status === 'preparing' && (
                   <button
-                    className="btn btn-success"
-                    style={{ fontSize: '0.9rem', padding: '6px 12px' }}
+                    type="button"
+                    className="btn btn-gold btn-sm"
                     onClick={() => updateStatus(order.id, 'ready')}
                   >
-                    完成
+                    完成出餐
                   </button>
                 )}
                 {order.status === 'ready' && (
                   <button
-                    className="btn"
-                    style={{ fontSize: '0.9rem', padding: '6px 12px', background: '#95a5a6', color: 'white' }}
+                    type="button"
+                    className="btn btn-outline btn-sm"
                     onClick={() => updateStatus(order.id, 'completed')}
                   >
-                    已取餐
+                    确认送达
                   </button>
                 )}
               </div>
