@@ -62,5 +62,13 @@
     "category": "汤类",
     "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=tomato%20egg%20soup%20in%20a%20bowl&image_size=square",
     "description": "酸甜开胃，营养丰富"
+  },
+  {
+    "id": 1781926987035,
+    "name": "清蒸季星辰",
+    "price": 8888,
+    "category": "11",
+    "description": "1",
+    "image": ""
   }
 ]

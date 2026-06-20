@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "id": 1781926943614,
+    "orderNumber": "943614",
+    "items": [
+      {
+        "id": 8,
+        "name": "番茄蛋汤",
+        "price": 10,
+        "category": "汤类",
+        "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=tomato%20egg%20soup%20in%20a%20bowl&image_size=square",
+        "description": "酸甜开胃，营养丰富",
+        "quantity": 3
+      }
+    ],
+    "total": 30,
+    "customer": "111111",
+    "tableNumber": "11",
+    "status": "ready",
+    "createdAt": "2026-06-20T03:42:23.614Z"
+  }
+]
