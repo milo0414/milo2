@@ -9,16 +9,34 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+
     if (!token) {
       setLoading(false);
       return;
     }
 
+    // 优先使用本地缓存的用户信息，保证页面能正常导航
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        // ignore
+      }
+    }
+
+    // 后台验证 token，但不影响页面加载
     apiFetch('/api/auth/me')
-      .then((data) => setUser(data.user))
+      .then((data) => {
+        setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      })
       .catch(() => {
-        localStorage.removeItem('token');
-        setUser(null);
+        // API 失败时保留本地缓存的用户，确保还能浏览
+        if (!savedUser) {
+          localStorage.removeItem('token');
+          setUser(null);
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -36,6 +54,7 @@ export function AuthProvider({ children }) {
     }
 
     localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   };
