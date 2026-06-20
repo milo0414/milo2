@@ -22,3 +22,6 @@ Thumbs.db
 
 # Data (optional - remove if you want to commit data)
 backend/data/*.json
+
+# Ignore milo1 directory
+milo1/
