@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 
 const AuthContext = createContext(null);
+const API_BASE = process.env.REACT_APP_API_URL || '';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -26,7 +27,7 @@ export function AuthProvider({ children }) {
     }
 
     // 后台验证 token，但不影响页面加载
-    apiFetch('/api/auth/me')
+    apiFetch(`${API_BASE}/api/auth/me`)
       .then((data) => {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -42,16 +43,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (role) => {
-    const res = await fetch('/api/auth/login', {
+    const data = await apiFetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role })
     });
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || '进入失败');
-    }
 
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
@@ -61,11 +56,12 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await apiFetch('/api/auth/logout', { method: 'POST' });
+      await apiFetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
     } catch {
       // ignore
     }
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 

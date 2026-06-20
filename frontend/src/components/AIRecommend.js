@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
+
+const API_BASE = process.env.REACT_APP_API_URL || '';
 
 function AIRecommend({ menu, addToCart }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,23 +40,13 @@ function AIRecommend({ menu, addToCart }) {
     setError(null);
 
     try {
-      const response = await fetch('/api/ai/recommend', {
+      const data = await apiFetch(`${API_BASE}/api/ai/recommend`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
         body: JSON.stringify({
           messages: newMessages,
           menu: menu
         })
       });
-
-      if (!response.ok) {
-        throw new Error('AI 服务调用失败');
-      }
-
-      const data = await response.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch (err) {
       setError(err.message);

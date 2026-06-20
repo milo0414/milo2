@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import AIRecommend from './AIRecommend';
+import { apiFetch } from '../utils/api';
+
+const API_BASE = process.env.REACT_APP_API_URL || '';
 
 function Menu({ addToCart }) {
   const [menu, setMenu] = useState([]);
@@ -7,8 +10,7 @@ function Menu({ addToCart }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    fetch('/api/menu')
-      .then((res) => res.json())
+    apiFetch(`${API_BASE}/api/menu`)
       .then((data) => {
         setMenu(data);
         setCategories(['all', ...new Set(data.map((item) => item.category))]);

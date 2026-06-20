@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 
+const API_BASE = process.env.REACT_APP_API_URL || '';
+
 function Admin() {
   const [menu, setMenu] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
@@ -14,8 +16,7 @@ function Admin() {
 
   const fetchMenu = async () => {
     try {
-      const res = await fetch('/api/menu');
-      const data = await res.json();
+      const data = await apiFetch(`${API_BASE}/api/menu`);
       setMenu(data);
     } catch (error) {
       console.error('获取菜单失败:', error);
@@ -30,12 +31,12 @@ function Admin() {
     e.preventDefault();
     try {
       if (editingItem) {
-        await apiFetch(`/api/menu/${editingItem.id}`, {
+        await apiFetch(`${API_BASE}/api/menu/${editingItem.id}`, {
           method: 'PUT',
           body: JSON.stringify({ ...form, price: Number(form.price) })
         });
       } else {
-        await apiFetch('/api/menu', {
+        await apiFetch(`${API_BASE}/api/menu`, {
           method: 'POST',
           body: JSON.stringify({ ...form, price: Number(form.price) })
         });
@@ -62,7 +63,7 @@ function Admin() {
   const handleDelete = async (id) => {
     if (!window.confirm('确定要删除这道菜品吗？')) return;
     try {
-      await apiFetch(`/api/menu/${id}`, { method: 'DELETE' });
+      await apiFetch(`${API_BASE}/api/menu/${id}`, { method: 'DELETE' });
       fetchMenu();
     } catch (error) {
       console.error('删除失败:', error);
